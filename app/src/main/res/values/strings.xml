@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">PoRo</string>
+    <string name="title_activity_main">Map</string>
+    <string name="menu_home">Home</string>
+    <string name="setting">Settings</string>
+    <string name="introduce">Introduce</string>
+    <string name="contribute">Contribute</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="action_settings">Settings</string>
+    <string name="menu_gallery">Gallery</string>
+    <string name="menu_slideshow">Slideshow</string>
+    <string name="menu_tools">Tools</string>
+    <string name="menu_share">Share</string>
+    <string name="menu_send">Send</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="log_out">Log-out</string>
+    <string name="login">Log-in</string>
+
+    <string name="message">Message</string>
+    <string name="send">Send</string>
+    <string name="email">Email</string>
+    <string name="name">Name</string>
+    <string name="mobno">Mobile No.</string>
+    <string name="reg_no">Reg</string>
+    <string name="feedback">FeedBack</string>
+    <string name="filePath">File... (jpg,png,...)</string>
+    <string name="Note">Note</string>
+    <string name="account">Account</string>
+    <string name="client_id">654916206438-256fltl1f88g30ad228t89hqqcvinhi0.apps.googleusercontent.com</string>
+    <string name="client_secret">UO_V00kH2zfNN2GlL0X0ketz</string>
+</resources>

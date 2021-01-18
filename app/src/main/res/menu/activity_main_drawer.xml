@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/ic_home"
+            android:title="@string/menu_home" />
+        <item
+            android:id="@+id/nav_myCheck"
+            android:icon="@drawable/ic_library"
+            android:title="@string/contribute" />
+    </group>
+
+    <item android:title="Details">
+        <menu>
+            <item
+                android:id="@+id/nav_account"
+                android:icon="@drawable/ic_account"
+                android:title="@string/account" />
+            <item
+                android:id="@+id/nav_settings"
+                android:icon="@drawable/ic_settings"
+                android:title="@string/setting" />
+            <item
+                android:id="@+id/nav_introduce"
+                android:icon="@drawable/ic_info"
+                android:title="@string/introduce" />
+
+        </menu>
+    </item>
+
+</menu>
