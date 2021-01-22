@@ -25,6 +25,10 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -71,6 +75,8 @@ import com.google.android.material.snackbar.Snackbar;
 
 import android.os.CountDownTimer;
 import android.os.Handler;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.SpannableString;
@@ -89,6 +95,7 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.navigation.ui.AppBarConfiguration;
 
@@ -120,6 +127,7 @@ import android.view.Menu;
 import android.view.Window;
 import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -140,7 +148,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity implements OriginPlaceAdapter.OnShareClickedListener, DestinationPlaceAdapter.OnShareClickedListener,TaskLoadedCallback, OnMapReadyCallback, DirectionFinderListener, NavigationView.OnNavigationItemSelectedListener, LocationListener {
+public class MainActivity extends AppCompatActivity implements SensorEventListener, OriginPlaceAdapter.OnShareClickedListener, DestinationPlaceAdapter.OnShareClickedListener,TaskLoadedCallback, OnMapReadyCallback, DirectionFinderListener, NavigationView.OnNavigationItemSelectedListener, LocationListener {
 
     private static final int RC_SIGN_IN = 122;
     private AppBarConfiguration mAppBarConfiguration;
@@ -157,12 +165,14 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
     private EditText etDestination;
     private List<Marker> originMarkers = new ArrayList<>();
     private List<Marker> destinationMarkers = new ArrayList<>();
+    private List<Marker> markerList = new ArrayList<>();
+    Marker marker;
     private List<Polyline> polylinePaths = new ArrayList<>();
     private List<LatLng> latLngList = new ArrayList<>();
     private ProgressDialog progressDialog;
     DrawerLayout drawer;
     NavigationView navigationView;
-    private ImageView imgMenu, layer;
+    private ImageView imgMenu, layer, imgEye;
     GoogleApiClient mGoogleApiClient;
     LocationServices locationServices;
     LocationRequest mLocationRequest;
@@ -200,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 
     private static final long MIN_TIME = 400;
     private static final float MIN_DISTANCE = 1000;
-    private LinearLayout view_buble, layout_mylocation;
+    private LinearLayout view_buble, layout_mylocation, layout_myLocal;
     private Spinner spinner;
     private OriginPlaceAdapter originPlaceAdapter;
     private DestinationPlaceAdapter destinationPlaceAdapter;
@@ -212,14 +222,27 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 
     SharedPreferences pref;
     private String distance;
+    private Double distancePoint;
     SQLite db;
+    private Double minPoint = 0.0;
+    private int k = 0;
+
+    private static SensorManager sensorManager;
+    private static Sensor sensor;
+
+    private float currentX, currentY, currentZ, lastX, lastY, lastZ;
+    private boolean isAccelerometerSensorAvailable, itIsNotFirstTime = false;
+    private float xDif, yDif, zDif;
+    private float shakeThreshold = 5f;
+    private Vibrator vibrator;
+    private boolean isStatusSensor = false;
+    private Runnable runnableCheckIntance;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         initLayout();
-        dataPotholeList = new ArrayList<>();
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .build();
@@ -250,6 +273,20 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 
         new readData().execute();
         checkAccount();
+
+        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        sensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
+
+        if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)!=null)
+        {
+            sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            isAccelerometerSensorAvailable = true;
+        }else{
+            //Toast.makeText(getApplicationContext(),"Accelerometer is not available!",Toast.LENGTH_SHORT).show();
+            Log.e(TAG,"Accelerometer is not available!");
+            isAccelerometerSensorAvailable = false;
+        }
+
     }
 
     private void initLayout() {
@@ -306,7 +343,7 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 
         imgMenu = (ImageView) findViewById(R.id.btn_menu);
         layer = (ImageView) findViewById(R.id.layer);
-        imCam = (ImageView) findViewById(R.id.imCam);
+//        imCam = (ImageView) findViewById(R.id.imCam);
         imMaps = (ImageView) findViewById(R.id.imMaps);
         btnFindPath.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -359,14 +396,19 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 
             }
         });
+        layout_myLocal = (LinearLayout) findViewById(R.id.layout_myLocal);
+        imgEye = (ImageView) findViewById(R.id.imgEye);
 
-        imCam.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String a = String.valueOf(getDistance());
-                Toast.makeText(getApplicationContext(), a+"", Toast.LENGTH_SHORT).show();
-            }
-        });
+//        imCam.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                db = SQLite.getInstance(MainActivity.this);
+//                if (db.getTotalPotholeTB()!=0){
+//                    Toast.makeText(getApplicationContext(), db.getTotalPotholeTB()+", "+db.getAllPothole().get(1).getEmail()+"", Toast.LENGTH_SHORT).show();
+//                }
+//
+//            }
+//        });
 
         bottomSheet_listPoint = findViewById(R.id.nested_bottomsheets);
         behavior = BottomSheetBehavior.from(bottomSheet_listPoint);
@@ -380,6 +422,7 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
             public void onClick(View view) {
                 bottomSheet_listPoint.setVisibility(View.GONE);
                 layout1.setVisibility(View.VISIBLE);
+                isStatusSensor = false;
             }
         });
 
@@ -413,6 +456,7 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 //                sendNotification("Bạn đang di chuyển gần tới khu vực có mặt đường xấu","Chạm để xem chi tiết");
                 Log.d("notify", "check");
                 Intent intent = new Intent(MainActivity.this, NotificationActivity.class);
+                intent.putExtra("minDistance", minPoint);
                 startActivity(intent);
             }
         });
@@ -452,12 +496,6 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
         public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
         public void onTextChanged(CharSequence s, int start, int before, int count) { }
     };
-
-//    @Override
-//    public void click(Place place) {
-//        etOrigin.setText(place.getAddress()+"");
-//        //Toast.makeText(this, place.getAddress()+", "+place.getLatLng().latitude+place.getLatLng().longitude, Toast.LENGTH_SHORT).show();
-//    }
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
@@ -511,6 +549,87 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
         recyclerViewPlaceDestination.setVisibility(View.GONE);
     }
 
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+        //Log.d("sensor checking", "x:"+sensorEvent.values[0]+", y: "+sensorEvent.values[1]+", z: "+sensorEvent.values[2]);
+        currentX = sensorEvent.values[0];//m/s2
+        currentY = sensorEvent.values[1];
+        currentZ = sensorEvent.values[2];
+
+        if (itIsNotFirstTime)
+        {
+            xDif = Math.abs(lastX - currentX);
+            yDif = Math.abs(lastY - currentY);
+            zDif = Math.abs(lastZ - currentZ);
+
+            if ((xDif > shakeThreshold && yDif > shakeThreshold) ||
+                    (xDif > shakeThreshold && zDif > shakeThreshold)||
+                    (zDif > shakeThreshold && yDif > shakeThreshold))
+            {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    //Toast.makeText(getApplicationContext(), "Bạn đang di chuyển trên mặt đường xấu phải không?", Toast.LENGTH_SHORT).show();
+
+                    if (isStatusSensor == true){
+                        //Toast.makeText(getApplicationContext(), "Bạn đang di chuyển trên mặt đường xấu phải không?", Toast.LENGTH_SHORT).show();
+                        showDialogShaking();
+                        vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
+                    }else{
+                        //Toast.makeText(getApplicationContext(), "Bạn chưa lựa chọn lộ trình", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG, "Bạn chưa lựa chọn lộ trình");
+                    }
+                }else{
+                    vibrator.vibrate(500);
+                    //
+                }
+            }
+
+        }
+        lastX = currentX;
+        lastY = currentY;
+        lastZ = currentZ;
+        itIsNotFirstTime = true;
+
+    }
+
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
+    }
+
+    private void showDialogShaking(){
+//        if (list == null){
+//            return;
+//        }
+        final Dialog dialog;
+        dialog = new Dialog(MainActivity.this);
+        dialog.setContentView(R.layout.layout_dialog_shaking);
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        Window window = dialog.getWindow();
+        window.setGravity(Gravity.CENTER);
+        window.getAttributes().windowAnimations = R.style.DialogAnimation;
+        Button check = dialog.findViewById(R.id.btn_sendCheckLocation);
+        Button btnclose = dialog.findViewById(R.id.btn_close_dialog_sensor);
+        check.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.e(TAG, "Check Sensor dialog!");
+            }
+        });
+        btnclose.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                dialog.dismiss();
+            }
+        });
+
+        dialog.setCancelable(true);
+        window.setLayout(ActionBar.LayoutParams.WRAP_CONTENT,ActionBar.LayoutParams.WRAP_CONTENT);
+        dialog.show();
+
+
+    }
+
 
     class LogoutAccount extends AsyncTask<Void, Void, String> {
         // private ProgressDialog dialog;
@@ -552,13 +671,15 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             @SuppressLint("WrongConstant")
+
             NotificationChannel notificationChannel=new NotificationChannel("my_notification","n_channel",NotificationManager.IMPORTANCE_MAX);
             notificationChannel.setDescription("description");
             notificationChannel.setName("Channel Name");
             assert notificationManager != null;
+            notificationManager.deleteNotificationChannel("my_notification");
+
             notificationManager.createNotificationChannel(notificationChannel);
         }
-
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.drawable.ic_notifications)
@@ -716,13 +837,39 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 //    }
 
     @Override
-    public void onLocationChanged(Location location) {
+    public void onLocationChanged(final Location location) {
         //new FetchURL(MainActivity.this).execute(getURL(place1.getPosition(), place2.getPosition(),"driving"),"driving");
-        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 15.f);
-        mMap.animateCamera(cameraUpdate);
-        locationManager.removeUpdates(this);
+
+        imgEye.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (imgEye.getVisibility()==View.VISIBLE){
+                    Log.d(TAG, "check eye 1");
+                    if (k == 0){
+                        //layout_myLocal.setVisibility(View.GONE);
+                        imgEye.setColorFilter(ContextCompat.getColor(getApplicationContext(), R.color.colorPrimary),
+                                PorterDuff.Mode.MULTIPLY);
+                        k=1;
+                    }else if (k==1){
+                        imgEye.setColorFilter(ContextCompat.getColor(getApplicationContext(), R.color.black),
+                                PorterDuff.Mode.MULTIPLY);
+                        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+                        CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 15.f);
+                        mMap.animateCamera(cameraUpdate);
+                        locationManager.removeUpdates(MainActivity.this);
+                        k=0;
+                    }
+
+                }else {
+                    Log.d(TAG, "check eye 2");
+                }
+            }
+        });
+
+
     }
+
+
 
     @Override
     public void onStatusChanged(String s, int i, Bundle bundle) {
@@ -767,12 +914,15 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
         protected String doInBackground(Void... params) {
             //setMyLocation();
             //getAllUser();
-            getAllPotholes();
-            if (getAllPotholes()!= null){
+            dataPotholeList = getAllPotholes();
+            if (dataPotholeList!=null){
+                Log.e("status", "Check My location successfully!"+dataPotholeList.size());
+
+            }else{
+                Log.e("status", "Check My location failure");
 
             }
 //            checkAccount();
-            Log.e("status", "Check My location!");
             return null;
         }
 
@@ -846,6 +996,24 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
         super.onStart();
 
     }
+        @Override
+    protected void onResume() {
+        super.onResume();
+        if (isAccelerometerSensorAvailable){
+            sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+
+
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if (isAccelerometerSensorAvailable){
+            sensorManager.unregisterListener(this);
+        }
+    }
 
     private void getAllUser(){
         User_Interface service = API_clients.getClient().create(User_Interface.class);
@@ -870,8 +1038,8 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
             }
         });
     }
-    private List<DataPothole> getAllPotholes(){
 
+    private List<DataPothole> getAllPotholes(){
         Pothole_Interface service = API_clients.getClient().create(Pothole_Interface.class);
         Call<Pothole> userCall = service.getAllPothole();
         userCall.enqueue(new Callback<Pothole>() {
@@ -881,7 +1049,6 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
                 if (response.isSuccessful()) {
                     if (response.body()!=null){
                         Log.e("Data", ""+response.body().getMessage().toString());
-                        dataPotholeList = new ArrayList<>();
                         dataPotholeList = response.body().getDataPothole();
 //                        for (int i = dataPotholeList.size() - 1; i>=0 ; --i){
 //                            latLngList.add(new LatLng(
@@ -890,39 +1057,59 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 //                            ));
 //                        }
                         db = SQLite.getInstance(context);
-                        if (db.getTotalPotholeTB()==0 && dataPotholeList!=null){
-                            for (int i = dataPotholeList.size() - 1; i >= 0; --i) {
-                                db.insertDataPothole(new DataPothole(
-                                        dataPotholeList.get(i).getId(),
-                                        dataPotholeList.get(i).getName(),
-                                        dataPotholeList.get(i).getEmail(),
-                                        dataPotholeList.get(i).getLatitude(),
-                                        dataPotholeList.get(i).getLongitude(),
-                                        dataPotholeList.get(i).getImage(),
-                                        dataPotholeList.get(i).getNote(),
-                                        dataPotholeList.get(i).getVote(),
-                                        dataPotholeList.get(i).getCreated_at(),
-                                        dataPotholeList.get(i).getUpdated_at()
-                                ));
+                        if (dataPotholeList!=null && dataPotholeList.size()!=0){
+                            if (db.getTotalPotholeTB()==0 ){
+
+                                for (int i = dataPotholeList.size() - 1; i >= 0; --i) {
+                                    db.insertDataPothole(new DataPothole(
+                                            dataPotholeList.get(i).getId(),
+                                            dataPotholeList.get(i).getName(),
+                                            dataPotholeList.get(i).getEmail(),
+                                            dataPotholeList.get(i).getLatitude(),
+                                            dataPotholeList.get(i).getLongitude(),
+                                            dataPotholeList.get(i).getImage(),
+                                            dataPotholeList.get(i).getNote(),
+                                            dataPotholeList.get(i).getVote(),
+                                            dataPotholeList.get(i).getCreated_at(),
+                                            dataPotholeList.get(i).getUpdated_at()
+                                    ));
+                                }
+                                //Log.e("getTotalPotholeTB", db.getTotalPotholeTB() + "");
+                            }else{
+                                db.deletePothole();
+                                for (int i = dataPotholeList.size() - 1; i >= 0; --i) {
+                                    db.insertDataPothole(new DataPothole(
+                                            dataPotholeList.get(i).getId(),
+                                            dataPotholeList.get(i).getName(),
+                                            dataPotholeList.get(i).getEmail(),
+                                            dataPotholeList.get(i).getLatitude(),
+                                            dataPotholeList.get(i).getLongitude(),
+                                            dataPotholeList.get(i).getImage(),
+                                            dataPotholeList.get(i).getNote(),
+                                            dataPotholeList.get(i).getVote(),
+                                            dataPotholeList.get(i).getCreated_at(),
+                                            dataPotholeList.get(i).getUpdated_at()
+                                    ));
+                                }
+                                Log.d("getTotalListRouteTB", "= null");
                             }
-                            //Log.e("getTotalPotholeTB", db.getTotalPotholeTB() + "");
-                        }else{
-                            Log.d("getTotalListRouteTB", "= null");
                         }
+
                         if (dataPotholeList.size()!=0){
                             addMarkerToMaps(dataPotholeList);
                         }else{
                             Log.e("data pothole list: ", ""+dataPotholeList.size());
                         }
-                        View view = findViewById(R.id.layer1);
-                        Snackbar.make(view, "Data updated! "+db.getTotalPotholeTB(), Snackbar.LENGTH_SHORT)
-                                .setAction("Action", null).show();
+//                        View view = findViewById(R.id.layer1);
+//                        Snackbar.make(view, "Data updated! "+db.getTotalPotholeTB(), Snackbar.LENGTH_SHORT)
+//                                .setAction("Action", null).show();
 
                     }
                     //Toast.makeText(getApplicationContext(), "Tải dữ liệu thành công !", Toast.LENGTH_SHORT).show();
 
                 }else {
-                    Toast.makeText(getApplicationContext(), "không thành công !", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(getApplicationContext(), "không thành công !", Toast.LENGTH_SHORT).show();
+                    Log.e("get data: ", "không thành công !");
                 }
 
             }
@@ -932,12 +1119,25 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
             }
         });
         if (dataPotholeList !=null){
+            Log.d("dataPotholeList", ""+dataPotholeList.size());
             return dataPotholeList;
         }
         else{
             return null;
         }
     }
+
+     private void checkPoint(){
+         handler = new Handler();
+         final Runnable r = new Runnable() {
+             public void run() {
+                 getAllPotholes();
+                 handler.postDelayed(this, 10000);
+
+             }
+         };
+         handler.postDelayed(r, 1000);
+     }
 
     @Override
     public void onBackPressed() {
@@ -1091,8 +1291,15 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 //        mMap.addMarker(place1);
 //        mMap.addMarker(place2);
         checkOpen();
+        checkPoint();
+        db = SQLite.getInstance(MainActivity.this);
+        dataPotholeList = db.getAllPothole();
+        if (dataPotholeList!=null){
+            getDistance(dataPotholeList);
+        }else{
+            return;
+        }
         checkDistance();
-
         //showAllMarker();
         mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
             @Override
@@ -1174,9 +1381,14 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
         if (mMap==null){
             return;
         }
+        if (marker!=null){
+            marker.remove();
+
+        }
+
         Log.d(TAG, "addCustomMarker()");
         for (int i = dataPotholeList.size() -1; i>=0; --i){
-            Marker mar = mMap.addMarker(new MarkerOptions()
+            marker = mMap.addMarker(new MarkerOptions()
                     .position(new LatLng(Double.valueOf(dataPotholeList.get(i).getLatitude()), Double.valueOf(dataPotholeList.get(i).getLongitude()) ))
                     .title("User: "+ dataPotholeList.get(i).getName())
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.pothole_marker))
@@ -1195,7 +1407,18 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 //            }
 //        });
     }
-    private Double getDistance(){
+
+    private Double getDistance(List<DataPothole> dataPotholeList1){
+//        handler = new Handler();
+//        final Runnable r = new Runnable() {
+//            public void run() {
+//                if (distancePoint!=null){
+//
+//                }
+//                handler.postDelayed(this, 1000);
+//            }
+//        };
+//        handler.postDelayed(r, 1000);
         getlocation();
          Double m = null;
 //         db = SQLite.getInstance(this);
@@ -1217,22 +1440,25 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 //             addMarkerToMaps(dataPotholeList);
 //         }else{
 //             Log.d(TAG, "countList: "+ db.getTotalPotholeTB());
-//         }
-        Log.d(TAG, "countList: "+ dataPotholeList.size());
-        if (dataPotholeList.size()!=0)
-        for (int i = dataPotholeList.size() -1; i>=0; --i){
-            m = DistanceBetweenTwoPoints.getDistance(latitude, longitude, Double.valueOf(dataPotholeList.get(i).getLatitude()), Double.valueOf(dataPotholeList.get(i).getLongitude()));
+//
+
+        Log.d(TAG, "countList: "+ dataPotholeList1.size());
+        if (dataPotholeList1.size()!=0)
+        for (int i = dataPotholeList1.size() -1; i>=0; --i){
+            m = DistanceBetweenTwoPoints.getDistance(latitude, longitude, Double.valueOf(dataPotholeList1.get(i).getLatitude()), Double.valueOf(dataPotholeList1.get(i).getLongitude()));
             //Log.d(TAG, "Distance: "+m+", "+i+"");
+            minPoint = 500.0;
+            if (m < minPoint){
+                minPoint = m;
+            }
+
             if (m <= 500.0){
-                distance = m.toString();
-                SharedPreferences.Editor edit = getSharedPreferences("Settings", Context.MODE_PRIVATE).edit();
-                edit.putString("distance", m.toString());
-                edit.apply();
-                edit.commit();
-                return m;
+                distancePoint = m;
+                return distancePoint;
             }else{
                 //Log.d(TAG, "Distance: ok");
             }
+            Log.d(TAG, "Distance: "+ m.toString()+"");
         }
         return m;
 
@@ -1267,27 +1493,51 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 
     private void checkDistance(){
         handler = new Handler();
-        final Runnable r = new Runnable() {
+        runnableCheckIntance = new Runnable() {
             public void run() {
-                Double distance1 = null;
-                        distance1 = getDistance();
-                DecimalFormat decimalFormat = new DecimalFormat("##.##");
+                if (distancePoint!=null){
+                    if (distancePoint<=500.0){
+                        String distan = distancePoint.toString();
 
-                if ((distance1!= null || distance1 != 0) ){
-                    String dis = decimalFormat.format(Double.valueOf(distance)).toString();
-                    sendNotification("Cảnh báo", "Cách bạn " + dis +"m có đoạn đường có mặt đường xấu");
-                    handler.postDelayed(this, 20000);
-//                    SharedPreferences.Editor edit = getSharedPreferences("Settings", Context.MODE_PRIVATE).edit();
-//                    edit.putString("old_distance", old_distance+"");
-//                    edit.apply();
-//                    edit.commit();
-                }else{
-                    handler.postDelayed(this, 1000);
+//                        DecimalFormat decimalFormat = new DecimalFormat("##.##");
+//                        //Double b=  Double.parseDouble(decimalFormat.format(distancePoint));
+//                        String dis = decimalFormat.format(distan);
+                        Log.e("Distance Service1: ", distan+"");
+
+                        pref = getSharedPreferences("Settings", Context.MODE_PRIVATE);
+                        String x = pref.getString("old_distance", "");
+                        if (x!= String.valueOf(distancePoint)){
+                            sendNotification("Cảnh báo", "Cách bạn " + distan +"m có đoạn đường có mặt đường xấu");
+                            SharedPreferences.Editor edit = getSharedPreferences("Settings", Context.MODE_PRIVATE).edit();
+                            edit.putString("old_distance", distancePoint+"");
+                            edit.apply();
+                            edit.commit();
+                            handler.postDelayed(this, 50000);
+                        }else{
+                            handler.postDelayed(this, 1000);
+
+                        }
+
+
+                    }else{
+                        Log.e("Distance Service2: ", distancePoint+"");
+                        handler.postDelayed(this, 1000);
+                    }
                 }
-                Log.e("Distance Service: ", distance+"");
+                //handler.postDelayed(this, 1000);
+
+////                    SharedPreferences.Editor edit = getSharedPreferences("Settings", Context.MODE_PRIVATE).edit();
+////                    edit.putString("old_distance", old_distance+"");
+////                    edit.apply();
+////                    edit.commit();
+//                }else{
+//                    handler.postDelayed(this, 1000);
+//                }
+//                Log.e("Distance Service: ", distance+"");
             }
         };
-        handler.postDelayed(r, 1000);
+        handler.postDelayed(runnableCheckIntance, 1000);
+
     }
 
 
@@ -1441,7 +1691,7 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
     public void onDirectionFinderStart() {
         progressDialog = ProgressDialog.show(this, "Please wait.",
                 "Finding direction..!", true);
-
+        isStatusSensor = false;
         if (originMarkers != null) {
             for (Marker marker : originMarkers) {
                 marker.remove();
@@ -1473,7 +1723,7 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
             bottomSheet_listPoint.setVisibility(View.VISIBLE);
             layout1.setVisibility(View.GONE);
             ((TextView) findViewById(R.id.tvDuration)).setText(route.duration.text);
-            ((TextView) findViewById(R.id.tvDistance)).setText(route.distance.text);
+            ((TextView) findViewById(R.id.txtDistanceCar)).setText(route.distance.text);
             txtNameStart.setText(route.getStartAddress());
             txtNameEnd.setText(route.getEndAddress());
             txtLocationStart.setText(route.getStartLocation().latitude+" - "+route.getStartLocation().longitude);
@@ -1507,6 +1757,7 @@ public class MainActivity extends AppCompatActivity implements OriginPlaceAdapte
 
             }
             polylinePaths.add(mMap.addPolyline(polylineOptions));
+            isStatusSensor = true;
         }
     }
 

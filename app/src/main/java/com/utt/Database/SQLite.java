@@ -125,16 +125,16 @@ public class SQLite extends SQLiteOpenHelper {
             Log.d("cursor", ""+cursor.toString());
             do {
                 words.add(new DataPothole(
-                        cursor.getInt(1),
+                        cursor.getInt(0),
+                        cursor.getString(1),
                         cursor.getString(2),
-                        cursor.getString(3),
+                        cursor.getDouble(3),
                         cursor.getDouble(4),
-                        cursor.getDouble(5),
+                        cursor.getString(5),
                         cursor.getString(6),
-                        cursor.getString(7),
-                        cursor.getInt(8),
-                        cursor.getString(9),
-                        cursor.getString(10)
+                        cursor.getInt(7),
+                        cursor.getString(8),
+                        cursor.getString(9)
                 ));
             } while (cursor.moveToNext());
             cursor.close();
@@ -151,6 +151,14 @@ public class SQLite extends SQLiteOpenHelper {
         cursor.close();
         return totalRows;
     }
+
+        public int deletePothole() {
+            SQLiteDatabase db = getReadableDatabase();
+            int rowEffect = db.delete(TABLE_POTHOLE, null, null);
+            db.close();
+            return rowEffect;
+        }
+
 
     //insert DataPothole route detail 1
     public boolean insertDataNotify(Notify notify){

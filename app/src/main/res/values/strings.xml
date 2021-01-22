@@ -34,4 +34,6 @@
     <string name="account">Account</string>
     <string name="client_id">654916206438-256fltl1f88g30ad228t89hqqcvinhi0.apps.googleusercontent.com</string>
     <string name="client_secret">UO_V00kH2zfNN2GlL0X0ketz</string>
+    <string name="question_sensor">The road surface is very bad, isn\'t it?</string>
+    <string name="yes">Yes!</string>
 </resources>

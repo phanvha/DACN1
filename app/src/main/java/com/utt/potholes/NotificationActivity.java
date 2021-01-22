@@ -6,6 +6,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Menu;
@@ -40,14 +41,13 @@ public class NotificationActivity extends AppCompatActivity {
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
-
-        pref = getSharedPreferences("Settings", Activity.MODE_PRIVATE);
-        message = pref.getString("notification","");
+        Intent intent = getIntent();
+        Double minDistance = intent.getDoubleExtra("minDistance",1);
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd - HH:mm:ss", Locale.getDefault());
         String currentDateandTime = sdf.format(new Date());
 
 
-        datalist.add(new Notify(1 ,"Cảnh báo", currentDateandTime,message));
+        datalist.add(new Notify(1 ,"Cảnh báo nguy hiểm", currentDateandTime,"Điểm đường xấu cách bạn khoảng "+minDistance+" m. Hãy cẩn thận"));
         datalist.add(new Notify(2 ,"Phản hồi ý kiến", currentDateandTime,"Gửi ý kiến đóng góp của bạn để chúng tôi có thể phát triển ứng dụng tốt hơn"));
 
 

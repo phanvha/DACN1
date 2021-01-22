@@ -4,71 +4,44 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/centre_background"
     tools:context=".WelcomeActivity">
 
-    <ImageView
-        android:id="@+id/imgLogoMain"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:layout_marginTop="200dp"
-        android:background="@drawable/maps"
-        android:transitionName="trans_logo"
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/logoAnimDrop"
+        android:layout_width="wrap_content"
+        android:layout_height="100dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0"
+        app:lottie_autoPlay="true"
+        app:lottie_rawRes="@raw/location_drop" />
+
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/logoAnimLogo"
+        android:layout_width="wrap_content"
+        android:layout_height="200dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:lottie_autoPlay="true"
+        app:lottie_rawRes="@raw/location_4" />
 
     <TextView
-        android:id="@+id/txtTitleMain"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="0dp"
-        android:fontFamily="@font/bangers"
-        android:text="PoRo"
-        android:textColor="@color/whiteTextColor"
-        android:transitionName="trans_title"
-        android:textAlignment="center"
-        android:textSize="80sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/imgLogoMain" />
-
-    <TextView
-        android:id="@+id/txtSlogan"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:fontFamily="@font/arbutus"
-        android:text="Traffic safety is no accident"
-        android:textColor="@color/white"
-        android:textAlignment="center"
-        android:textSize="24sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/txtTitleMain"/>
-
-    <ProgressBar
-        android:id="@+id/progress_bar_main"
+        android:id="@+id/txtAppName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="100dp"
-        android:layout_weight="0.1"
-        style="@style/SpinKitView.DoubleBounce"
+        android:fontFamily="casual"
+        android:text="Poro"
+        android:textColor="@color/background_nav"
+        android:textSize="60sp"
+        android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
-        android:fontFamily="@font/denk_one"
-        android:text="By Phan Van Ha"
-        android:textAlignment="center"
-        android:textColor="@color/white"
-        android:textSize="18sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/logoAnimLogo"
+        app:layout_constraintVertical_bias="0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

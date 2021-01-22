@@ -2,14 +2,23 @@ package com.utt.potholes;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.Animation;
@@ -17,8 +26,10 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
+import com.airbnb.lottie.LottieAnimationView;
 import com.github.ybq.android.spinkit.style.DoubleBounce;
 import com.utt.utils.CheckGoogleAccountStatus;
 
@@ -26,11 +37,13 @@ import java.util.Locale;
 
 public class WelcomeActivity extends AppCompatActivity {
 
-    Animation topAnimation, bottomAAnimation;
-    ImageView imageLogofl;
-    TextView txtTitleMain, txtSlogan;
+    LottieAnimationView lottieAnimationView1,lottieAnimationView2;
+    TextView txtNameApp;
     ProgressBar progressBar;
     private  SharedPreferences pref;
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,26 +51,17 @@ public class WelcomeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_welcome);
         //loadLanguageSaved();
 
-        //Animations
-        topAnimation = AnimationUtils.loadAnimation(this, R.anim.top_animation);
-        bottomAAnimation = AnimationUtils.loadAnimation(this, R.anim.bottom_animation);
+        txtNameApp = (TextView) findViewById(R.id.txtAppName);
+        lottieAnimationView1 = findViewById(R.id.logoAnimLogo);
+        lottieAnimationView2 = findViewById(R.id.logoAnimLogo);
+        txtNameApp.animate().translationX(1400).setDuration(1000).setStartDelay(5000);
+        //lottieAnimationView.animate().translationY(-1600).setDuration(1000).setStartDelay(4000);
+//        progressBar = findViewById(R.id.progress_bar_main);
+//        progressBar.setIndeterminateDrawable(new DoubleBounce());
+        checkLogin();
 
-//        progressBar = (ProgressBar) findViewById(R.id.progress_bar_main);
-//        progressBar.setMax(100);
-//        progressBar.setVisibility(View.GONE);
-
-        txtTitleMain = (TextView) findViewById(R.id.txtTitleMain);
-        txtSlogan = (TextView) findViewById(R.id.txtSlogan);
-        imageLogofl = (ImageView) findViewById(R.id.imgLogoMain);
-        txtSlogan.setVisibility(View.GONE);
-
-        txtTitleMain.setAnimation(bottomAAnimation);
-        txtSlogan.setAnimation(bottomAAnimation);
-        imageLogofl.setAnimation(topAnimation);
-        progressBar = findViewById(R.id.progress_bar_main);
-        progressBar.setIndeterminateDrawable(new DoubleBounce());
-
-
+    }
+    private void checkLogin(){
         final boolean status = CheckGoogleAccountStatus.getcheckDataAccount(this);
 //        startProgcessBar();
 
@@ -75,10 +79,22 @@ public class WelcomeActivity extends AppCompatActivity {
 //                            startActivity(intent, activityOptions.toBundle());
 //                            finish();
 //                            overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                    // TODO: Consider calling
+                                    //    Activity#requestPermissions
+                                    // here to request the missing permissions, and then overriding
+                                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                    //                                          int[] grantResults)
+                                    // to handle the case where the user grants the permission. See the documentation
+                                    // for Activity#requestPermissions for more details.
+                                    return;
+                                }
+                            }
                             Intent intent = new Intent(WelcomeActivity.this, MainActivity.class);
                             startActivity(intent);
                             finish();
-                            overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
+                            //overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
 
                         }else{
 //                            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
@@ -90,7 +106,18 @@ public class WelcomeActivity extends AppCompatActivity {
 //                            startActivity(intent, activityOptions.toBundle());
 //                            overridePendingTransition(R.anim.push_left_in, R.anim.push_left_out);
 //                            finish();
-
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                    // TODO: Consider calling
+                                    //    Activity#requestPermissions
+                                    // here to request the missing permissions, and then overriding
+                                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                    //                                          int[] grantResults)
+                                    // to handle the case where the user grants the permission. See the documentation
+                                    // for Activity#requestPermissions for more details.
+                                    return;
+                                }
+                            }
                             Intent intent = new Intent(WelcomeActivity.this, LoginActivity.class);
                             startActivity(intent);
                             finish();
@@ -98,22 +125,8 @@ public class WelcomeActivity extends AppCompatActivity {
 
                         }
                     }
-                }, 3500);
+                }, 5800);
     }
-//    @SuppressLint("SetTextI18n")
-//    public static void loadLanguageSaved(){
-//        pref = getSharedPreferences("Settings", Activity.MODE_PRIVATE);
-//        String language = pref.getString("myLanguage","");
-//        Log.e("lang", language+"");
-//        Locale locale = new Locale(language);
-//        Locale.setDefault(locale);
-//        Configuration configuration = new Configuration();
-//        configuration.locale = locale;
-//        getBaseContext().getResources().updateConfiguration(configuration, getBaseContext().getResources().getDisplayMetrics());
-//        SharedPreferences.Editor edit = getSharedPreferences("Settings", Context.MODE_PRIVATE).edit();
-//        edit.putString("myLanguage", language);
-//        edit.apply();
-//        edit.commit();
-//    }
+
 
 }

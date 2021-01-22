@@ -116,6 +116,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingLeft="10dp"
+                android:layout_marginTop="10dp"
                 android:orientation="vertical">
                 <TextView
                     android:layout_width="wrap_content"
@@ -127,26 +128,19 @@
             </LinearLayout>
             <RelativeLayout
                 android:layout_below="@id/layout_f"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingLeft="10dp"
-                android:gravity="center_vertical"
+                android:gravity="center"
                 android:orientation="vertical">
-                <EditText
-                    android:layout_width="100dp"
-                    android:layout_height="wrap_content"
-                    android:textStyle="bold"
-                    android:inputType="number"
-                    android:tooltipText="Numberic"
-                    android:textColor="@color/blue_grey_700"/>
+
                 <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Vote"
                     android:textStyle="bold"
-                    android:layout_alignParentRight="true"
                     android:textAllCaps="false"
-                    android:background="@drawable/custom_layout_hover"/>
+                    android:background="@drawable/custom_layout_hint"/>
 
 
             </RelativeLayout>
@@ -178,7 +172,7 @@
                 android:id="@+id/image_Avatar"
                 android:layout_width="80dp"
                 android:layout_height="80dp"
-                android:background="@drawable/img2" />
+                android:background="@drawable/duong1" />
         </LinearLayout>
 
     </RelativeLayout>
